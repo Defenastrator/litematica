@@ -1,14 +1,8 @@
 package fi.dy.masa.litematica.schematic;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import javax.annotation.Nullable;
+import java.io.File;
+import java.util.*;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
@@ -35,6 +29,7 @@ import fi.dy.masa.litematica.Litematica;
 import fi.dy.masa.litematica.schematic.LitematicaSchematic.EntityInfo;
 import fi.dy.masa.litematica.schematic.container.LitematicaBlockStateContainer;
 import fi.dy.masa.litematica.schematic.conversion.SchematicConversionFixers.IStateFixer;
+import fi.dy.masa.litematica.schematic.conversion.SchematicConversionMaps;
 import fi.dy.masa.litematica.schematic.conversion.SchematicConverter;
 import fi.dy.masa.litematica.util.EntityUtils;
 import fi.dy.masa.litematica.util.NbtUtils;
@@ -143,7 +138,7 @@ public class SchematicaSchematic
 
                                 try
                                 {
-                                    te.readNbt(teNBT);
+                                    te.read(teNBT, world.getRegistryManager());
                                 }
                                 catch (Exception e)
                                 {
@@ -276,7 +271,7 @@ public class SchematicaSchematic
 
                                         try
                                         {
-                                            te.readNbt(teNBT);
+                                            te.read(teNBT, world.getRegistryManager());
                                         }
                                         catch (Exception e)
                                         {
@@ -373,7 +368,7 @@ public class SchematicaSchematic
                     {
                         try
                         {
-                            NbtCompound nbt = te.createNbtWithId();
+                            NbtCompound nbt = te.createNbtWithId(world.getRegistryManager());
                             BlockPos pos = new BlockPos(relX, relY, relZ);
                             NBTUtils.writeBlockPosToTag(pos, nbt);
 
@@ -686,9 +681,12 @@ public class SchematicaSchematic
         this.entities.clear();
         NbtList tagList = nbt.getList("Entities", Constants.NBT.TAG_COMPOUND);
 
+        Litematica.logger.warn("SchematicaSchematic: executing Vanilla DataFixer for Entities DataVersion 1139 -> {}", LitematicaSchematic.MINECRAFT_DATA_VERSION);
+
         for (int i = 0; i < tagList.size(); ++i)
         {
-            this.entities.add(tagList.getCompound(i));
+            // Throw this data to the Data Fixer gods from Version MINECRAFT_DEFAULT_DATA_VERSION
+            this.entities.add(SchematicConversionMaps.updateEntity(tagList.getCompound(i), LitematicaSchematic.MINECRAFT_DEFAULT_DATA_VERSION));
         }
     }
 
@@ -696,6 +694,8 @@ public class SchematicaSchematic
     {
         this.tiles.clear();
         NbtList tagList = nbt.getList("TileEntities", Constants.NBT.TAG_COMPOUND);
+
+        Litematica.logger.warn("SchematicaSchematic: executing Vanilla DataFixer for Tile Entities DataVersion 1139 -> {}", LitematicaSchematic.MINECRAFT_DATA_VERSION);
 
         for (int i = 0; i < tagList.size(); ++i)
         {
@@ -707,8 +707,9 @@ public class SchematicaSchematic
                 pos.getY() >= 0 && pos.getY() < size.getY() &&
                 pos.getZ() >= 0 && pos.getZ() < size.getZ())
             {
-                tag = this.converter.fixTileEntityNBT(tag, this.blocks.get(pos.getX(), pos.getY(), pos.getZ()));
-                this.tiles.put(pos, tag);
+                // tag = this.converter.fixTileEntityNBT(tag, this.blocks.get(pos.getX(), pos.getY(), pos.getZ()));
+                // Throw this data to the Data Fixer gods from Version MINECRAFT_DEFAULT_DATA_VERSION
+                this.tiles.put(pos, SchematicConversionMaps.updateBlockEntity(tag, LitematicaSchematic.MINECRAFT_DEFAULT_DATA_VERSION));
             }
         }
     }

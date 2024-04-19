@@ -1,23 +1,19 @@
 package fi.dy.masa.litematica.schematic.conversion;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
-import javax.annotation.Nullable;
-import com.mojang.datafixers.DataFixUtils;
-import com.mojang.serialization.Dynamic;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import com.mojang.datafixers.DataFixUtils;
+import com.mojang.serialization.Dynamic;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.PillarBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.datafixer.TypeReferences;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtHelper;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.NbtString;
-import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.nbt.*;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryEntryLookup;
 import net.minecraft.util.math.Direction;
@@ -190,10 +186,11 @@ public class SchematicConversionMaps
                 NbtCompound oldStateTag = getStateTagFromString(oldStateStrings[0]);
                 String oldName = oldStateTag.getString("Name");
 
-                // Don't run the vanilla block rename for overidden names
+                // Don't run the vanilla block rename for overridden names
                 if (overriddenName == null)
                 {
-                    newName = updateBlockName(newName);
+                    // DataVersion 1139 is from 1.12
+                    newName = updateBlockName(newName, LitematicaSchematic.MINECRAFT_DATA_VERSION_1_12);
                     newStateTag.putString("Name", newName);
                 }
 
@@ -278,12 +275,33 @@ public class SchematicConversionMaps
         }
     }
 
-    public static String updateBlockName(String oldName)
+    public static String updateBlockName(String oldName, int oldVersion)
     {
         NbtString tagStr = NbtString.of(oldName);
 
         return MinecraftClient.getInstance().getDataFixer().update(TypeReferences.BLOCK_NAME, new Dynamic<>(NbtOps.INSTANCE, tagStr),
-                        1139, LitematicaSchematic.MINECRAFT_DATA_VERSION).getValue().asString();
+                oldVersion, LitematicaSchematic.MINECRAFT_DATA_VERSION).getValue().asString();
+    }
+
+    /**
+     * These are the Vanilla Data Fixer's for the 1.20.x -> 1.20.5 changes
+     */
+    public static NbtCompound updateBlockStates(NbtCompound oldBlockState, int oldVersion)
+    {
+        return (NbtCompound) MinecraftClient.getInstance().getDataFixer().update(TypeReferences.BLOCK_STATE, new Dynamic<>(NbtOps.INSTANCE, oldBlockState),
+                oldVersion, LitematicaSchematic.MINECRAFT_DATA_VERSION).getValue();
+    }
+
+    public static NbtCompound updateBlockEntity(NbtCompound oldBlockEntity, int oldVersion)
+    {
+        return (NbtCompound) MinecraftClient.getInstance().getDataFixer().update(TypeReferences.BLOCK_ENTITY, new Dynamic<>(NbtOps.INSTANCE, oldBlockEntity),
+                oldVersion, LitematicaSchematic.MINECRAFT_DATA_VERSION).getValue();
+    }
+
+    public static NbtCompound updateEntity(NbtCompound oldEntity, int oldVersion)
+    {
+        return (NbtCompound) MinecraftClient.getInstance().getDataFixer().update(TypeReferences.ENTITY, new Dynamic<>(NbtOps.INSTANCE, oldEntity),
+                oldVersion, LitematicaSchematic.MINECRAFT_DATA_VERSION).getValue();
     }
 
     private static class ConversionData
