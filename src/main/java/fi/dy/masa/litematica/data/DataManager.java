@@ -506,5 +506,12 @@ public class DataManager implements IDirectoryCache
     public static void setToolItem(String itemNameIn)
     {
         toolItem = InventoryUtils.getItemStackFromString(itemNameIn);
+
+        if (toolItem == null)
+        {
+            // Fall back to a stick
+            toolItem = new ItemStack(Items.STICK);
+            Configs.Generic.TOOL_ITEM.setValueFromString(Registries.ITEM.getId(Items.STICK).toString());
+        }
     }
 }
