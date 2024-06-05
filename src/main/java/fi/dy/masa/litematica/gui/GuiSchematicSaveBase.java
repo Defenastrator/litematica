@@ -52,10 +52,10 @@ public abstract class GuiSchematicSaveBase extends GuiSchematicBrowserBase imple
 
         boolean focused = this.textField.isFocused();
         String text = this.textField.getText();
-        int pos = this.textField.getCursor();
+        //int pos = this.textField.getCursor();
         this.textField = new GuiTextFieldGeneric(10, 32, this.width - 260, 18, this.textRenderer);
         this.textField.setText(text);
-        this.textField.setCursor(pos, false);
+        //this.textField.setCursor(pos, false);
         this.textField.setFocused(focused);
 
         DirectoryEntry entry = this.getListWidget().getLastSelectedEntry();
@@ -101,7 +101,7 @@ public abstract class GuiSchematicSaveBase extends GuiSchematicBrowserBase imple
     {
         this.lastText = text;
         this.textField.setText(text);
-        this.textField.setCursorToEnd(false);
+        //this.textField.setCursorToEnd(false);
     }
 
     protected String getTextFieldText()
