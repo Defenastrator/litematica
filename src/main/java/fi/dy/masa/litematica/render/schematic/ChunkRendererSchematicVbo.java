@@ -450,7 +450,7 @@ public class ChunkRendererSchematicVbo implements AutoCloseable
             overlayType = OverlayRenderType.QUAD;
             BufferBuilderPatch bufferOverlayQuads = this.builderCache.getBufferByOverlay(overlayType, allocators);
 
-            if (data.isOverlayTypeStarted(overlayType) == false || bufferOverlayQuads == null)
+            if (!data.isOverlayTypeStarted(overlayType) || bufferOverlayQuads == null)
             {
                 data.setOverlayTypeStarted(overlayType);
                 bufferOverlayQuads = this.preRenderOverlay(overlayType, allocators);
@@ -475,7 +475,7 @@ public class ChunkRendererSchematicVbo implements AutoCloseable
                         BakedModel bakedModel = this.worldRenderer.getModelForState(stateSchematic);
 
                         if (type.getRenderPriority() > typeAdj.getRenderPriority() ||
-                            Block.isFaceFullSquare(stateSchematic.getCollisionShape(this.schematicWorldView, pos), side) == false)
+                                !Block.isFaceFullSquare(stateSchematic.getCollisionShape(this.schematicWorldView, pos), side))
                         {
                             RenderUtils.drawBlockModelQuadOverlayBatched(bakedModel, stateSchematic, relPos, side, this.overlayColor, 0, bufferOverlayQuads);
                         }
@@ -588,7 +588,6 @@ public class ChunkRendererSchematicVbo implements AutoCloseable
     {
         OverlayType[] neighborTypes = new OverlayType[4];
         Vec3i[] neighborPositions = new Vec3i[4];
-        int lines = 0;
 
         for (Direction.Axis axis : PositionUtils.AXES_ALL)
         {
@@ -653,8 +652,16 @@ public class ChunkRendererSchematicVbo implements AutoCloseable
                     if (posTmp.getX() == pos.getX() && posTmp.getY() == pos.getY() && posTmp.getZ() == pos.getZ())
                     {
                         //System.out.printf("plop 2 index: %d, ind: %d, pos: %s, off: %s\n", index, ind, pos, posTmp);
-                        RenderUtils.drawBlockBoxEdgeBatchedLines(this.getChunkRelativePosition(pos), axis, corner, this.overlayColor, bufferOverlayOutlines);
-                        lines++;
+                        try {
+                            RenderUtils.drawBlockBoxEdgeBatchedLines(this.getChunkRelativePosition(pos), axis, corner, this.overlayColor, bufferOverlayOutlines);
+                        } catch (IllegalStateException err) {
+                            // TODO: This is absolutely awful. Basically  some times the render buffer is closed
+                            //  while the this processing is happening but if this happens the work the thread was
+                            //  doing is going to be thrown away anyway so we just abort & no harm done. Really we
+                            //  should be using cancelable futures & coroutines to do this correctly but that is a
+                            //  task for not 1:30am when I have work tomorrow.
+                            return;
+                        }
                     }
                 }
             }
